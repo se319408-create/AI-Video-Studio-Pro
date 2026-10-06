@@ -5,30 +5,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Java 21
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.27.4'
           channel: 'stable'
-          flutter-version: '3.27.0'
-
-      - name: Get Dependencies with Auto-Fix
-        run: |
-          flutter pub get || flutter pub upgrade --major-versions
-
-      - name: Build APK Release
-        run: flutter build apk --release
-
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
+          cache: false
+      - run: flutter --version
+      - run: flutter pub get
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
         with:
           name: AI-Video-Studio-Pro-APK
           path: build/app/outputs/flutter-apk/app-release.apk
