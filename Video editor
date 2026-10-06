@@ -1,0 +1,240 @@
+=====================================================================
+AI Video Studio Pro - FINAL VERIFIED PROMPT (All 5 Issues Fixed)
+=====================================================================
+Build a personal-use video & audio editing app named "AI Video Studio Pro" using
+Flutter 3.24.5 (stable) for Android ONLY. Target: single user, no Play Store, no login/signup, no PWA.
+
+=== 0. STRICT OUTPUT RULE (MOST IMPORTANT) ===
+You MUST generate files ONE BY ONE. DO NOT generate all files at once.
+After giving me ONE file, STOP and wait for me to type "next".
+If you generate multiple files at once, the code will be truncated and useless.
+Start with pubspec.yaml, then wait for "next".
+
+=== 1. PROJECT STRUCTURE & FILES (in this exact order) ===
+1. pubspec.yaml
+2. android/build.gradle
+3. android/app/build.gradle
+4. android/settings.gradle
+5. android/app/src/main/AndroidManifest.xml
+6. .github/workflows/build.yml
+7. lib/main.dart
+8. lib/screens/home_screen.dart
+9. lib/screens/editor_screen.dart
+10. lib/screens/resolution_converter_screen.dart
+11. lib/screens/audio_editor_screen.dart
+12. lib/screens/export_screen.dart
+13. lib/screens/my_projects_screen.dart
+14. lib/screens/settings_screen.dart
+15. lib/services/ffmpeg_service.dart
+16. lib/services/storage_service.dart
+17. lib/services/gemini_service.dart
+18. lib/services/audio_service.dart
+19. BUILD_GUIDE.md
+
+=== 2. PUBSPEC.YAML (USE EXACTLY THIS - DO NOT CHANGE VERSIONS) ===
+name: ai_video_studio_pro
+description: "A personal-use Android video and audio editing app powered by Flutter and FFmpeg."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # File management & storage
+  file_picker: ^8.1.2
+  media_store_plus: ^1.0.3
+  path_provider: ^2.1.2
+  shared_preferences: ^2.2.2
+  permission_handler: ^11.3.0
+
+  # Video processing & AI
+  ffmpeg_kit_flutter_new: ^4.6.0
+  video_player: ^2.8.6
+  google_mlkit_selfie_segmentation: ^0.10.1
+  google_generative_ai: ^0.4.6
+
+  # Background processing
+  flutter_background_service: ^5.0.9
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+CRITICAL NOTES:
+- ffmpeg_kit_flutter_new (NOT ffmpeg_kit_flutter_new_full_gpl - that name does NOT exist on pub.dev)
+- google_mlkit_selfie_segmentation MUST be ^0.10.1 (NOT ^0.11.0 or ^0.13.0 - those need Dart 3.8+)
+- flutter_lints MUST be ^4.0.0 (NOT ^5.0.0 or ^6.0.0 - those need Dart 3.8+)
+- ffmpeg_kit_flutter_new: ^4.6.0 includes libx264 AND libx265 codecs
+
+=== 3. ANDROID CONFIGURATION ===
+
+A. Root android/build.gradle:
+   buildscript {
+       repositories {
+           google()
+           mavenCentral()
+       }
+       dependencies {
+           classpath 'com.android.tools.build:gradle:8.1.0'
+           classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22'
+       }
+   }
+   allprojects {
+       repositories {
+           google()
+           mavenCentral()
+       }
+   }
+
+B. android/app/build.gradle:
+   - namespace "com.example.ai_video_studio_pro"
+   - compileSdkVersion 34
+   - defaultConfig:
+     - applicationId "com.example.ai_video_studio_pro"
+     - minSdkVersion 24
+     - targetSdkVersion 34
+     - versionCode 1
+     - versionName "1.0.0"
+     - ndkVersion "25.1.8937393"
+   - compileOptions:
+     - sourceCompatibility JavaVersion.VERSION_17
+     - targetCompatibility JavaVersion.VERSION_17
+   - kotlinOptions:
+     - jvmTarget = '17'
+
+C. android/settings.gradle:
+   pluginManagement {
+       def flutterSdkPath = {
+           def properties = new Properties()
+           file("local.properties").withInputStream { properties.load(it) }
+           def flutterSdkPath = properties.getProperty("flutter.sdk")
+           assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
+           return flutterSdkPath
+       }()
+       includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+       repositories {
+           google()
+           mavenCentral()
+           gradlePluginPortal()
+       }
+   }
+   plugins {
+       id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+       id "com.android.application" version "8.1.0" apply false
+       id "org.jetbrains.kotlin.android" version "1.9.22" apply false
+   }
+   include ":app"
+
+D. android/app/src/main/AndroidManifest.xml:
+   Permissions:
+   - READ_MEDIA_VIDEO
+   - READ_MEDIA_AUDIO
+   - READ_MEDIA_IMAGES
+   - INTERNET
+   - RECORD_AUDIO
+   - CAMERA
+   - FOREGROUND_SERVICE
+   - FOREGROUND_SERVICE_MEDIA_PROCESSING
+   - POST_NOTIFICATIONS
+   - WRITE_EXTERNAL_STORAGE (with android:maxSdkVersion="28")
+
+   Foreground Service Entry (inside <application>):
+   <service
+       android:name="id.flutter.flutter_background_service.BackgroundService"
+       android:foregroundServiceType="mediaProcessing"
+       android:exported="false" />
+
+=== 4. GITHUB ACTIONS WORKFLOW (.github/workflows/build.yml) ===
+name: Build Android APK
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          cache: true
+      - name: Get dependencies
+        run: flutter pub get
+      - name: Build APK
+        run: flutter build apk --release
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI-Video-Studio-Pro-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+CRITICAL:
+- Do NOT set channel: 'stable' when flutter-version is set. This causes conflict.
+- Do NOT create pubspec.lock in the repo. If exists, delete it.
+- If "Expected to find project root in current working directory" error appears, 
+  BUILD_GUIDE.md must mention running: flutter create . --platforms android
+
+=== 5. CORE FEATURES & EXPORT ENGINE (H.265 ONLY) ===
+
+1. UI: CapCut-style dark Material 3 interface with bottom navigation:
+   Home, Projects, AI Tools, Settings.
+
+2. Offline/Online Badging:
+   - Offline features: Green "Offline Mode" badge.
+   - Gemini features: Blue "Online Required" badge.
+
+3. AI Feature Handling:
+   - google_generative_ai is used ONLY for text and image content analysis.
+   - For paid features (Change Dress, Hairstyle, Deblur, Watermark Removal), 
+     show dialog on tap:
+     "This feature requires a paid API key (Imagen 3 - not available in free tier). Coming soon."
+   - DO NOT invent API methods that do not exist.
+
+4. Smart Export System (H.265 ONLY - Super Saver Mode):
+   Use ONLY libx265 (HEVC) for all exports.
+   5 resolution options:
+   * 4K UHD: -c:v libx265 -crf 28 -preset medium -b:v 500k -c:a aac -b:a 32k | ~4 MB/min
+   * 2K QHD: -c:v libx265 -crf 30 -preset medium -b:v 240k -c:a aac -b:a 32k | ~2 MB/min
+   * 1080p:  -c:v libx265 -crf 32 -preset medium -b:v 133k -c:a aac -b:a 32k | ~1 MB/min (MAIN)
+   * 720p:   -c:v libx265 -crf 33 -preset medium -b:v 66k  -c:a aac -b:a 32k | ~0.5 MB/min
+   * 480p:   -c:v libx265 -crf 34 -preset medium -b:v 40k  -c:a aac -b:a 32k | ~0.3 MB/min
+   
+   No h264, no YouTube Mode. Only h265 Super Saver.
+   Show live size calculation: "Your 120 min video will be ~120 MB in 1080p Saver mode."
+   No watermark.
+   Default selected: 1080p Saver (1MB/min).
+
+5. Resolution Converter (Simple UI):
+   - Cards: 360p Small, 480p Normal, 720p HD, 1080p Best, 2K Pro, 4K Cinema
+   - Smart defaults based on original resolution
+   - Simple warnings in Urdu/Hindi
+   - Frame Rate dropdown: 24, 25, 30, 50, 60, 120, Custom
+   - Preserve aspect ratio
+
+6. Media Management:
+   - Save to Gallery via media_store_plus (Android 10+)
+   - FALLBACK for Android 9 and below: save to external storage using dart:io
+   - Save to app's "My Projects" folder via path_provider
+   - My Projects screen: list with thumbnail, name, duration, size, date
+   - Options per project: Delete (confirm), Rename, Re-edit, Duplicate, Share
+
+7. Background Service:
+   - Initialize flutter_background_service properly in main.dart
+   - Handle chunked FFmpeg export for videos longer than 30 minutes
+   - Show progress notification
+
+Provide complete, fully compilable, error-free Flutter code without any TODO 
+comments or truncated sections.
+
+Start with pubspec.yaml, then wait for "next".
